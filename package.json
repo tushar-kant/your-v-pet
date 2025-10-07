@@ -1,0 +1,143 @@
+{
+  "name": "your-vscode-pet",
+  "displayName": " Your VSCode Pets",
+  "description": "A delightful pet that runs across your VS Code! Set a favorite or enjoy random surprises.",
+  "version": "1.0.0",
+  "engines": {
+    "vscode": "^1.74.0"
+  },
+  "categories": ["Other"],
+  "keywords": ["vscode", "pets", "pet", "animation", "fun", "cute", "productivity", "entertainment"],
+  "activationEvents": ["*"],
+  "main": "./out/extension.js",
+  "icon": "assets/logo.jpg",
+  "galleryBanner": {
+    "color": "#FF6B6B",
+    "theme": "light"
+  },
+  "publisher": "Zyronix",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tushar-kant/vscode-pets"
+  },
+  "homepage": "https://github.com/tushar-kant/vscode-pets#readme",
+  "bugs": {
+    "url": "https://github.com/tushar-kant/vscode-pets/issues"
+  },
+  "license": "MIT",
+  "contributes": {
+    "commands": [
+      {
+        "command": "vscodePets.runPet",
+        "title": "Run Pet",
+        "category": "VSCode Pets",
+        "icon": "$(heart)"
+      },
+      {
+        "command": "vscodePets.managePets",
+        "title": "Manage Pets",
+        "category": "VSCode Pets",
+        "icon": "$(settings-gear)"
+      }
+    ],
+    "configuration": {
+      "title": "VSCode Pets Settings",
+      "properties": {
+        "vscodePets.favoritePet": {
+          "type": "string",
+          "default": "",
+          "description": "Your favorite pet emoji (leave empty for random pets)"
+        },
+        "vscodePets.favoritePetName": {
+          "type": "string",
+          "default": "",
+          "description": "Name of your favorite pet"
+        },
+        "vscodePets.customPets": {
+          "type": "array",
+          "default": [
+            {"name": "Dragon", "emoji": "🐉", "walkFrames": ["🐉", "🔥", "💨"]},
+            {"name": "Unicorn", "emoji": "🦄", "walkFrames": ["🦄", "✨", "🌟"]},
+            {"name": "Ghost", "emoji": "👻", "walkFrames": ["👻", "🌫️", "💀"]},
+            {"name": "Robot", "emoji": "🤖", "walkFrames": ["🤖", "⚡", "🔧"]}
+          ],
+          "description": "Your collection of custom pets",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": {"type": "string"},
+              "emoji": {"type": "string"},
+              "walkFrames": {"type": "array", "items": {"type": "string"}}
+            }
+          }
+        },
+        "vscodePets.petCollection": {
+          "type": "string",
+          "default": "mixed",
+          "enum": ["built-in", "custom", "mixed"],
+          "enumDescriptions": [
+            "Use only built-in pets (cat, dog, fox, etc.)",
+            "Use only your custom pets",
+            "Mix both built-in and custom pets"
+          ],
+          "description": "Which pet collection to use for random selection"
+        },
+        "vscodePets.animationSpeed": {
+          "type": "number",
+          "default": 5000,
+          "minimum": 2000,
+          "maximum": 15000,
+          "description": "Animation duration in milliseconds (2000-15000)"
+        },
+        "vscodePets.showSparkles": {
+          "type": "boolean",
+          "default": true,
+          "description": "Show sparkle effects during pet animation"
+        },
+        "vscodePets.customSparkles": {
+          "type": "array",
+          "default": ["✨", "⭐", "💫", "🌟", "💖", "🎀"],
+          "description": "Custom sparkle emojis to use in animations",
+          "items": {"type": "string"}
+        },
+        "vscodePets.showPetName": {
+          "type": "boolean",
+          "default": true,
+          "description": "Display pet name during animation"
+        },
+        "vscodePets.petSize": {
+          "type": "string",
+          "default": "normal",
+          "enum": ["small", "normal", "large"],
+          "enumDescriptions": [
+            "Small pets (32px)",
+            "Normal pets (48px)",
+            "Large pets (64px)"
+          ],
+          "description": "Size of the pet during animation"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "vscode-test",
+    "package": "vsce package",
+    "publish": "vsce publish"
+  },
+  "devDependencies": {
+    "@types/vscode": "^1.74.0",
+    "@types/node": "18.x",
+    "@typescript-eslint/eslint-plugin": "^6.4.1",
+    "@typescript-eslint/parser": "^6.4.1",
+    "eslint": "^8.47.0",
+    "typescript": "^5.1.6",
+    "@vscode/test-cli": "^0.0.9",
+    "@vscode/test-electron": "^2.3.4",
+    "@vscode/vsce": "^2.19.0"
+  }
+}
