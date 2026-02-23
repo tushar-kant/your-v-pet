@@ -3,7 +3,7 @@
 A delightful VS Code extension that brings joy to your coding experience by displaying animated pets running across your editor! Watch as cute animals traverse your screen with beautiful animations, sparkles, and customizable effects.
 
 ![Pet Runner Demo](https://img.shields.io/badge/VS%20Code-Extension-blue.svg)
-![Version](https://img.shields.io/badge/version-1.0.0-green.svg)
+![Version](https://img.shields.io/badge/version-1.1.2-green.svg)
 ![TypeScript](https://img.shields.io/badge/TypeScript-007ACC.svg)
 
 ## ✨ Features
