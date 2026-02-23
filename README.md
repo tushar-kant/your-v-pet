@@ -27,6 +27,8 @@ A delightful VS Code extension that brings joy to your coding experience by disp
 ### 🛠️ Management Features
 - **Pet Collection Manager**: View all available pets in one place
 - **Custom Pet Editor**: Add, edit, and delete your custom creations
+- **Import/Export Custom Pets**: Share your pets with others via the clipboard
+- **Pomodoro Break Reminder**: Setup auto-running pets to remind you to take breaks
 - **Settings Integration**: Full VS Code settings integration
 - **Quick Actions**: Easy-to-use command palette integration
 - **Reset Options**: Restore defaults when needed
@@ -65,6 +67,15 @@ A delightful VS Code extension that brings joy to your coding experience by disp
 4. Choose main emoji (e.g., "🐉")
 5. Define animation frames (e.g., "🐉 🔥 💨")
 
+### Sharing Custom Pets (Import/Export)
+1. Export: Open Pet Management and select **"Export Custom Pets"** to copy your pets to the clipboard as JSON.
+2. Import: Copy a valid pet JSON array to your clipboard, open Pet Management, and select **"Import Custom Pets"**. Your pets will be safely merged into your collection!
+
+### Pomodoro Break Reminder
+1. Open settings and find `vscodePets.breakReminderMinutes`.
+2. Set it to the number of minutes (e.g., `45` or `60`) after which you'd like a break.
+3. Your favorite pet (or a random one) will automatically run across the screen with a break reminder when the time is up!
+
 ## ⚙️ Configuration Options
 
 ### Settings Available in VS Code Settings
@@ -93,10 +104,13 @@ A delightful VS Code extension that brings joy to your coding experience by disp
   "petRunner.petSize": "normal",
   
   // Custom sparkle emojis
-  "petRunner.customSparkles": ["✨", "⭐", "💫", "🌟", "💖", "🎀"],
+  "vscodePets.customSparkles": ["✨", "⭐", "💫", "🌟", "💖", "🎀"],
   
+  // Pomodoro break reminder (in minutes, set to 0 to disable)
+  "vscodePets.breakReminderMinutes": 0,
+
   // Your custom pets collection
-  "petRunner.customPets": [
+  "vscodePets.customPets": [
     {
       "name": "Dragon",
       "emoji": "🐉",
@@ -124,8 +138,10 @@ A delightful VS Code extension that brings joy to your coding experience by disp
 
 | Command | Description |
 |---------|-------------|
-| `Pet Runner: Run Pet` | Trigger pet animation |
-| `Pet Runner: Manage Pets` | Open pet management interface |
+| `VSCode Pets: Run Pet` | Trigger pet animation |
+| `VSCode Pets: Manage Pets` | Open pet management interface |
+| `VSCode Pets: Export Custom Pets` | Export your custom pets to clipboard |
+| `VSCode Pets: Import Custom Pets` | Import custom pets from clipboard |
 
 ## 🔧 Development Setup
 
