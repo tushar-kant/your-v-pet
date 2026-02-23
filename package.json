@@ -2,15 +2,28 @@
   "name": "your-vscode-pet",
   "displayName": " Your VSCode Pets",
   "description": "A delightful pet that runs across your VS Code! Set a favorite or enjoy random surprises.",
-  "version": "1.0.0",
+  "version": "1.1.2",
   "engines": {
     "vscode": "^1.74.0"
   },
-  "categories": ["Other"],
-  "keywords": ["vscode", "pets", "pet", "animation", "fun", "cute", "productivity", "entertainment"],
-  "activationEvents": ["*"],
+  "categories": [
+    "Other"
+  ],
+  "keywords": [
+    "vscode",
+    "pets",
+    "pet",
+    "animation",
+    "fun",
+    "cute",
+    "productivity",
+    "entertainment"
+  ],
+  "activationEvents": [
+    "*"
+  ],
   "main": "./out/extension.js",
-  "icon": "assets/logo.jpg",
+  "icon": "assets/icon.png",
   "galleryBanner": {
     "color": "#FF6B6B",
     "theme": "light"
@@ -18,11 +31,11 @@
   "publisher": "Zyronix",
   "repository": {
     "type": "git",
-    "url": "https://github.com/tushar-kant/vscode-pets"
+    "url": "https://github.com/tushar-kant/your-v-pet"
   },
-  "homepage": "https://github.com/tushar-kant/vscode-pets#readme",
+  "homepage": "https://github.com/tushar-kant/your-v-pet#readme",
   "bugs": {
-    "url": "https://github.com/tushar-kant/vscode-pets/issues"
+    "url": "https://github.com/tushar-kant/your-v-pet/issues"
   },
   "license": "MIT",
   "contributes": {
@@ -38,6 +51,18 @@
         "title": "Manage Pets",
         "category": "VSCode Pets",
         "icon": "$(settings-gear)"
+      },
+      {
+        "command": "vscodePets.exportPets",
+        "title": "Export Custom Pets",
+        "category": "VSCode Pets",
+        "icon": "$(export)"
+      },
+      {
+        "command": "vscodePets.importPets",
+        "title": "Import Custom Pets",
+        "category": "VSCode Pets",
+        "icon": "$(import)"
       }
     ],
     "configuration": {
@@ -56,25 +81,70 @@
         "vscodePets.customPets": {
           "type": "array",
           "default": [
-            {"name": "Dragon", "emoji": "🐉", "walkFrames": ["🐉", "🔥", "💨"]},
-            {"name": "Unicorn", "emoji": "🦄", "walkFrames": ["🦄", "✨", "🌟"]},
-            {"name": "Ghost", "emoji": "👻", "walkFrames": ["👻", "🌫️", "💀"]},
-            {"name": "Robot", "emoji": "🤖", "walkFrames": ["🤖", "⚡", "🔧"]}
+            {
+              "name": "Dragon",
+              "emoji": "🐉",
+              "walkFrames": [
+                "🐉",
+                "🔥",
+                "💨"
+              ]
+            },
+            {
+              "name": "Unicorn",
+              "emoji": "🦄",
+              "walkFrames": [
+                "🦄",
+                "✨",
+                "🌟"
+              ]
+            },
+            {
+              "name": "Ghost",
+              "emoji": "👻",
+              "walkFrames": [
+                "👻",
+                "🌫️",
+                "💀"
+              ]
+            },
+            {
+              "name": "Robot",
+              "emoji": "🤖",
+              "walkFrames": [
+                "🤖",
+                "⚡",
+                "🔧"
+              ]
+            }
           ],
           "description": "Your collection of custom pets",
           "items": {
             "type": "object",
             "properties": {
-              "name": {"type": "string"},
-              "emoji": {"type": "string"},
-              "walkFrames": {"type": "array", "items": {"type": "string"}}
+              "name": {
+                "type": "string"
+              },
+              "emoji": {
+                "type": "string"
+              },
+              "walkFrames": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
             }
           }
         },
         "vscodePets.petCollection": {
           "type": "string",
           "default": "mixed",
-          "enum": ["built-in", "custom", "mixed"],
+          "enum": [
+            "built-in",
+            "custom",
+            "mixed"
+          ],
           "enumDescriptions": [
             "Use only built-in pets (cat, dog, fox, etc.)",
             "Use only your custom pets",
@@ -96,9 +166,18 @@
         },
         "vscodePets.customSparkles": {
           "type": "array",
-          "default": ["✨", "⭐", "💫", "🌟", "💖", "🎀"],
+          "default": [
+            "✨",
+            "⭐",
+            "💫",
+            "🌟",
+            "💖",
+            "🎀"
+          ],
           "description": "Custom sparkle emojis to use in animations",
-          "items": {"type": "string"}
+          "items": {
+            "type": "string"
+          }
         },
         "vscodePets.showPetName": {
           "type": "boolean",
@@ -108,13 +187,23 @@
         "vscodePets.petSize": {
           "type": "string",
           "default": "normal",
-          "enum": ["small", "normal", "large"],
+          "enum": [
+            "small",
+            "normal",
+            "large"
+          ],
           "enumDescriptions": [
             "Small pets (32px)",
             "Normal pets (48px)",
             "Large pets (64px)"
           ],
           "description": "Size of the pet during animation"
+        },
+        "vscodePets.breakReminderMinutes": {
+          "type": "number",
+          "default": 0,
+          "minimum": 0,
+          "description": "Minutes between break reminders to run a pet (0 to disable)"
         }
       }
     }

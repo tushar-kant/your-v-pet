@@ -10,6 +10,7 @@ interface CustomPet {
 
 let statusBarButton: vscode.StatusBarItem;
 let isAnimationRunning = false;
+let reminderInterval: NodeJS.Timeout | undefined;
 
 // Built-in pets collection
 const builtInPets: CustomPet[] = [
@@ -35,19 +36,42 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Register commands
     const commands = [
-        vscode.commands.registerCommand('petRunner.runPet', () => runPet(context)),
-        vscode.commands.registerCommand('petRunner.managePets', () => managePets())
+        vscode.commands.registerCommand('vscodePets.runPet', () => runPet(context)),
+        vscode.commands.registerCommand('vscodePets.managePets', () => managePets()),
+        vscode.commands.registerCommand('vscodePets.exportPets', () => exportPets()),
+        vscode.commands.registerCommand('vscodePets.importPets', () => importPets())
     ];
 
     // Add to subscriptions
     context.subscriptions.push(statusBarButton, ...commands);
 
+    // Setup Pomodoro break reminder
+    setupBreakReminder(context);
+
     // Listen for configuration changes (but button text stays static)
     vscode.workspace.onDidChangeConfiguration((event) => {
-        if (event.affectsConfiguration('petRunner')) {
+        if (event.affectsConfiguration('vscodePets')) {
             updateStatusBarButton();
+            setupBreakReminder(context);
         }
     });
+}
+
+function setupBreakReminder(context: vscode.ExtensionContext) {
+    if (reminderInterval) {
+        clearInterval(reminderInterval);
+        reminderInterval = undefined;
+    }
+
+    const config = vscode.workspace.getConfiguration('vscodePets');
+    const minutes = config.get<number>('breakReminderMinutes', 0);
+
+    if (minutes > 0) {
+        reminderInterval = setInterval(() => {
+            vscode.window.showInformationMessage('☕ Time for a break! Here is your pet reminder.');
+            runPet(context);
+        }, minutes * 60 * 1000);
+    }
 }
 
 function createStatusBarButton() {
@@ -63,8 +87,8 @@ function updateStatusBarButton() {
     // Static button text and appearance
     statusBarButton.text = "🐾 Pet";
     statusBarButton.tooltip = "Click to run your pet across the screen!";
-    statusBarButton.command = 'petRunner.runPet';
-    statusBarButton.backgroundColor = isAnimationRunning 
+    statusBarButton.command = 'vscodePets.runPet';
+    statusBarButton.backgroundColor = isAnimationRunning
         ? new vscode.ThemeColor('statusBarItem.warningBackground')
         : undefined;
 }
@@ -75,7 +99,7 @@ async function runPet(context: vscode.ExtensionContext) {
         return;
     }
 
-    const config = vscode.workspace.getConfiguration('petRunner');
+    const config = vscode.workspace.getConfiguration('vscodePets');
     const favoritePet = config.get<string>('favoritePet', '');
     const favoritePetName = config.get<string>('favoritePetName', '');
 
@@ -86,7 +110,7 @@ async function runPet(context: vscode.ExtensionContext) {
         // User has set a favorite pet - run only that pet
         const customPets = config.get<CustomPet[]>('customPets', []);
         const allPets = [...builtInPets, ...customPets];
-        
+
         // Try to find the favorite pet in the collections
         petToRun = allPets.find(pet => pet.emoji === favoritePet || pet.name === favoritePetName) || {
             name: favoritePetName || 'Favorite',
@@ -97,9 +121,9 @@ async function runPet(context: vscode.ExtensionContext) {
         // No favorite pet set - run random pet
         const customPets = config.get<CustomPet[]>('customPets', []);
         const collection = config.get<string>('petCollection', 'mixed');
-        
+
         let availablePets: CustomPet[] = [];
-        
+
         switch (collection) {
             case 'built-in':
                 availablePets = [...builtInPets];
@@ -112,12 +136,12 @@ async function runPet(context: vscode.ExtensionContext) {
                 availablePets = [...builtInPets, ...customPets];
                 break;
         }
-        
+
         if (availablePets.length === 0) {
             vscode.window.showInformationMessage('No pets available! Add some custom pets or change your collection setting.');
             return;
         }
-        
+
         petToRun = availablePets[Math.floor(Math.random() * availablePets.length)];
     }
 
@@ -125,10 +149,10 @@ async function runPet(context: vscode.ExtensionContext) {
 }
 
 async function managePets() {
-    const config = vscode.workspace.getConfiguration('petRunner');
+    const config = vscode.workspace.getConfiguration('vscodePets');
     const favoritePet = config.get<string>('favoritePet', '');
     const favoritePetName = config.get<string>('favoritePetName', '');
-    
+
     const items: vscode.QuickPickItem[] = [
         {
             label: "$(heart) Set Favorite Pet",
@@ -159,6 +183,17 @@ async function managePets() {
             label: "$(refresh) Reset to Defaults",
             description: "Reset all settings to default values",
             detail: "This will remove all custom pets and clear favorite"
+        },
+        { label: "", kind: vscode.QuickPickItemKind.Separator },
+        {
+            label: "$(export) Export Custom Pets",
+            description: "Export pets to clipboard",
+            detail: "Share your pets with others"
+        },
+        {
+            label: "$(import) Import Custom Pets",
+            description: "Import pets from clipboard",
+            detail: "Add custom pets from others"
         },
         { label: "", kind: vscode.QuickPickItemKind.Separator },
         {
@@ -194,17 +229,23 @@ async function managePets() {
         case "$(refresh) Reset to Defaults":
             await resetToDefaults();
             break;
+        case "$(export) Export Custom Pets":
+            await exportPets();
+            break;
+        case "$(import) Import Custom Pets":
+            await importPets();
+            break;
         case "$(gear) Open Settings":
-            vscode.commands.executeCommand('workbench.action.openSettings', 'petRunner');
+            vscode.commands.executeCommand('workbench.action.openSettings', 'vscodePets');
             break;
     }
 }
 
 async function setFavoritePet() {
-    const config = vscode.workspace.getConfiguration('petRunner');
+    const config = vscode.workspace.getConfiguration('vscodePets');
     const customPets = config.get<CustomPet[]>('customPets', []);
     const allPets = [...builtInPets, ...customPets];
-    
+
     const quickPickItems: vscode.QuickPickItem[] = [
         {
             label: "$(circle-slash) No Favorite (Random Pets)",
@@ -219,7 +260,7 @@ async function setFavoritePet() {
         { label: "", kind: vscode.QuickPickItemKind.Separator },
         { label: "Built-in Pets", kind: vscode.QuickPickItemKind.Separator }
     ];
-    
+
     // Add built-in pets
     builtInPets.forEach(pet => {
         quickPickItems.push({
@@ -228,7 +269,7 @@ async function setFavoritePet() {
             detail: "Built-in pet - will always run when button is clicked"
         });
     });
-    
+
     // Add custom pets if any exist
     if (customPets.length > 0) {
         quickPickItems.push({ label: "Your Custom Pets", kind: vscode.QuickPickItemKind.Separator });
@@ -260,17 +301,17 @@ async function setFavoritePet() {
         const parts = selected.label.split(' ');
         const emoji = parts[0];
         const name = parts.slice(1).join(' ');
-        
+
         await config.update('favoritePet', emoji, vscode.ConfigurationTarget.Global);
         await config.update('favoritePetName', name, vscode.ConfigurationTarget.Global);
-        
+
         vscode.window.showInformationMessage(`💖 ${name} is now your favorite pet! ${emoji} Button will always run ${name}.`);
     }
 }
 
 async function setCustomFavoritePet() {
-    const config = vscode.workspace.getConfiguration('petRunner');
-    
+    const config = vscode.workspace.getConfiguration('vscodePets');
+
     const emoji = await vscode.window.showInputBox({
         title: "💖 Custom Favorite Pet - Emoji",
         prompt: "Enter your favorite emoji or symbol",
@@ -307,13 +348,13 @@ async function setCustomFavoritePet() {
 
     await config.update('favoritePet', emoji.trim(), vscode.ConfigurationTarget.Global);
     await config.update('favoritePetName', name.trim(), vscode.ConfigurationTarget.Global);
-    
+
     vscode.window.showInformationMessage(`💖 ${name.trim()} ${emoji.trim()} is now your favorite pet! Button will always run ${name.trim()}.`);
 }
 
 async function addCustomPet() {
-    const config = vscode.workspace.getConfiguration('petRunner');
-    
+    const config = vscode.workspace.getConfiguration('vscodePets');
+
     // Get pet name
     const name = await vscode.window.showInputBox({
         title: "➕ Add Custom Pet - Name",
@@ -384,7 +425,7 @@ async function addCustomPet() {
     };
 
     // Check if pet already exists
-    const existingIndex = customPets.findIndex(pet => 
+    const existingIndex = customPets.findIndex(pet =>
         pet.name.toLowerCase() === newPet.name.toLowerCase() || pet.emoji === newPet.emoji
     );
 
@@ -393,7 +434,7 @@ async function addCustomPet() {
             `A pet named "${customPets[existingIndex].name}" or with emoji "${customPets[existingIndex].emoji}" already exists. Replace it?`,
             'Replace', 'Cancel'
         );
-        
+
         if (replace === 'Replace') {
             customPets[existingIndex] = newPet;
         } else {
@@ -404,7 +445,7 @@ async function addCustomPet() {
     }
 
     await config.update('customPets', customPets, vscode.ConfigurationTarget.Global);
-    
+
     const setAsFavorite = await vscode.window.showInformationMessage(
         `✨ ${newPet.name} ${newPet.emoji} has been added to your custom pets!`,
         'Set as Favorite', 'OK'
@@ -418,14 +459,14 @@ async function addCustomPet() {
 }
 
 async function viewAllPets() {
-    const config = vscode.workspace.getConfiguration('petRunner');
+    const config = vscode.workspace.getConfiguration('vscodePets');
     const customPets = config.get<CustomPet[]>('customPets', []);
     const favoritePet = config.get<string>('favoritePet', '');
-    
+
     const items: vscode.QuickPickItem[] = [
         { label: "Built-in Pets", kind: vscode.QuickPickItemKind.Separator }
     ];
-    
+
     builtInPets.forEach(pet => {
         const isFavorite = pet.emoji === favoritePet;
         items.push({
@@ -434,7 +475,7 @@ async function viewAllPets() {
             detail: isFavorite ? "Your favorite pet ❤️" : "Built-in pet"
         });
     });
-    
+
     if (customPets.length > 0) {
         items.push({ label: "Your Custom Pets", kind: vscode.QuickPickItemKind.Separator });
         customPets.forEach(pet => {
@@ -446,7 +487,7 @@ async function viewAllPets() {
             });
         });
     }
-    
+
     items.push(
         { label: "", kind: vscode.QuickPickItemKind.Separator },
         { label: `📊 Total Pets: ${builtInPets.length + customPets.length}`, kind: vscode.QuickPickItemKind.Separator }
@@ -459,9 +500,9 @@ async function viewAllPets() {
 }
 
 async function editCustomPet() {
-    const config = vscode.workspace.getConfiguration('petRunner');
+    const config = vscode.workspace.getConfiguration('vscodePets');
     const customPets = config.get<CustomPet[]>('customPets', []);
-    
+
     if (customPets.length === 0) {
         vscode.window.showInformationMessage("You don't have any custom pets to edit. Add one first!");
         return;
@@ -482,15 +523,15 @@ async function editCustomPet() {
 
     const petName = selected.label.split(' ').slice(1).join(' ');
     const petIndex = customPets.findIndex(pet => pet.name === petName);
-    
+
     if (petIndex >= 0) {
         const pet = customPets[petIndex];
-        
+
         const action = await vscode.window.showInformationMessage(
             `Edit ${pet.name} ${pet.emoji}. Currently this will replace the entire pet. Individual field editing coming soon!`,
             'Replace Pet', 'Cancel'
         );
-        
+
         if (action === 'Replace Pet') {
             customPets.splice(petIndex, 1);
             await config.update('customPets', customPets, vscode.ConfigurationTarget.Global);
@@ -501,9 +542,9 @@ async function editCustomPet() {
 }
 
 async function deleteCustomPet() {
-    const config = vscode.workspace.getConfiguration('petRunner');
+    const config = vscode.workspace.getConfiguration('vscodePets');
     const customPets = config.get<CustomPet[]>('customPets', []);
-    
+
     if (customPets.length === 0) {
         vscode.window.showInformationMessage("You don't have any custom pets to delete.");
         return;
@@ -535,7 +576,7 @@ async function deleteCustomPet() {
             `Are you sure you want to delete ALL ${customPets.length} custom pets? This cannot be undone.`,
             'Delete All', 'Cancel'
         );
-        
+
         if (confirm === 'Delete All') {
             await config.update('customPets', [], vscode.ConfigurationTarget.Global);
             vscode.window.showInformationMessage(`All ${customPets.length} custom pets have been deleted.`);
@@ -543,19 +584,19 @@ async function deleteCustomPet() {
     } else {
         const petName = selected.label.split(' ').slice(1).join(' ');
         const petIndex = customPets.findIndex(pet => pet.name === petName);
-        
+
         if (petIndex >= 0) {
             const pet = customPets[petIndex];
             const confirm = await vscode.window.showWarningMessage(
                 `Are you sure you want to delete ${pet.name} ${pet.emoji}? This cannot be undone.`,
                 'Delete', 'Cancel'
             );
-            
+
             if (confirm === 'Delete') {
                 customPets.splice(petIndex, 1);
                 await config.update('customPets', customPets, vscode.ConfigurationTarget.Global);
                 vscode.window.showInformationMessage(`${pet.name} has been deleted from your custom pets.`);
-                
+
                 // If this was the favorite pet, clear favorite
                 const favoritePet = config.get<string>('favoritePet', '');
                 if (favoritePet === pet.emoji) {
@@ -576,8 +617,8 @@ async function resetToDefaults() {
 
     if (confirm !== 'Reset Everything') return;
 
-    const config = vscode.workspace.getConfiguration('petRunner');
-    
+    const config = vscode.workspace.getConfiguration('vscodePets');
+
     try {
         // Reset all settings to defaults
         await config.update('favoritePet', undefined, vscode.ConfigurationTarget.Global);
@@ -589,18 +630,18 @@ async function resetToDefaults() {
         await config.update('customSparkles', undefined, vscode.ConfigurationTarget.Global);
         await config.update('showPetName', undefined, vscode.ConfigurationTarget.Global);
         await config.update('petSize', undefined, vscode.ConfigurationTarget.Global);
-        
+
         vscode.window.showInformationMessage(
             '✅ Reset Complete!\n\n• All custom pets removed\n• Favorite pet cleared\n• Button will now run random pets\n• All settings restored to defaults'
         );
-        
+
     } catch (error) {
         vscode.window.showErrorMessage('Failed to reset settings. Please try again or reset manually in VS Code settings.');
     }
 }
 
 async function runPetAnimation(context: vscode.ExtensionContext, petData: CustomPet, isFavorite: boolean): Promise<void> {
-    const config = vscode.workspace.getConfiguration('petRunner');
+    const config = vscode.workspace.getConfiguration('vscodePets');
     const animationSpeed = config.get<number>('animationSpeed', 5000);
     const showSparkles = config.get<boolean>('showSparkles', true);
     const showPetName = config.get<boolean>('showPetName', true);
@@ -635,9 +676,9 @@ async function createPetAnimation(
         const panel = vscode.window.createWebviewPanel(
             'petAnimation',
             `${petData.name} Runner`,
-            { 
+            {
                 viewColumn: vscode.ViewColumn.Active,
-                preserveFocus: true 
+                preserveFocus: true
             },
             {
                 enableScripts: true,
@@ -667,7 +708,7 @@ async function createPetAnimation(
 
 function getBeautifulPetAnimationHtml(petData: CustomPet, duration: number, showSparkles: boolean, customSparkles: string[], petSize: string): string {
     const nonce = getNonce();
-    
+
     // Pet size mapping
     const sizeMap = {
         'small': 32,
@@ -675,7 +716,7 @@ function getBeautifulPetAnimationHtml(petData: CustomPet, duration: number, show
         'large': 64
     };
     const fontSize = sizeMap[petSize as keyof typeof sizeMap] || 48;
-    
+
     return `<!DOCTYPE html>
     <html lang="en">
     <head>
@@ -1002,5 +1043,42 @@ export function deactivate() {
     console.log('🐾 Pet Runner is deactivating...');
     if (statusBarButton) {
         statusBarButton.dispose();
+    }
+    if (reminderInterval) {
+        clearInterval(reminderInterval);
+    }
+}
+
+async function exportPets() {
+    const config = vscode.workspace.getConfiguration('vscodePets');
+    const customPets = config.get<CustomPet[]>('customPets', []);
+    if (customPets.length === 0) {
+        vscode.window.showInformationMessage('No custom pets to export!');
+        return;
+    }
+    await vscode.env.clipboard.writeText(JSON.stringify(customPets, null, 2));
+    vscode.window.showInformationMessage('📋 Custom pets exported to clipboard!');
+}
+
+async function importPets() {
+    try {
+        const text = await vscode.env.clipboard.readText();
+        const imported = JSON.parse(text);
+        if (Array.isArray(imported) && imported.length > 0 && imported[0].name && imported[0].emoji && imported[0].walkFrames) {
+            const config = vscode.workspace.getConfiguration('vscodePets');
+            const customPets = config.get<CustomPet[]>('customPets', []);
+
+            const newPets = [...customPets, ...imported];
+            const uniquePets = newPets.filter((pet, index, self) =>
+                index === self.findIndex((p) => p.name === pet.name)
+            );
+
+            await config.update('customPets', uniquePets, vscode.ConfigurationTarget.Global);
+            vscode.window.showInformationMessage(`✅ Successfully imported ${imported.length} custom pets! Your pet list now has ${uniquePets.length} custom pets.`);
+        } else {
+            throw new Error("Invalid format");
+        }
+    } catch (e) {
+        vscode.window.showErrorMessage('❌ Failed to import pets. Make sure valid JSON is in your clipboard.');
     }
 }
