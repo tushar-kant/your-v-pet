@@ -11,6 +11,8 @@ interface CustomPet {
 let statusBarButton: vscode.StatusBarItem;
 let isAnimationRunning = false;
 let reminderInterval: NodeJS.Timeout | undefined;
+let typeCounter = 0;
+let lastTypeTime = Date.now();
 
 // Built-in pets collection
 const builtInPets: CustomPet[] = [
@@ -39,11 +41,42 @@ export function activate(context: vscode.ExtensionContext) {
         vscode.commands.registerCommand('vscodePets.runPet', () => runPet(context)),
         vscode.commands.registerCommand('vscodePets.managePets', () => managePets()),
         vscode.commands.registerCommand('vscodePets.exportPets', () => exportPets()),
-        vscode.commands.registerCommand('vscodePets.importPets', () => importPets())
+        vscode.commands.registerCommand('vscodePets.importPets', () => importPets()),
+        vscode.commands.registerCommand('vscodePets.feedPet', () => feedPet()),
+        vscode.commands.registerCommand('vscodePets.playWithPet', () => playWithPet(context))
     ];
 
     // Add to subscriptions
     context.subscriptions.push(statusBarButton, ...commands);
+
+    // Track user typing for XP and mood
+    context.subscriptions.push(vscode.workspace.onDidChangeTextDocument(event => {
+        if (event.contentChanges.length > 0) {
+            typeCounter += event.contentChanges.length;
+            lastTypeTime = Date.now();
+
+            if (typeCounter > 100) {
+                // Earn XP for typing
+                addXp(10);
+                typeCounter = 0;
+            }
+            updateStatusBarButton();
+        }
+    }));
+
+    // Periodically update mood based on idle time and hunger
+    setInterval(() => {
+        const config = vscode.workspace.getConfiguration('vscodePets');
+        let hunger = config.get<number>('hunger', 100);
+
+        // Decrease hunger over time
+        if (hunger > 0) {
+            hunger = Math.max(0, hunger - 1);
+            config.update('hunger', hunger, vscode.ConfigurationTarget.Global);
+        }
+
+        updateStatusBarButton();
+    }, 60000); // 1 minute
 
     // Setup Pomodoro break reminder
     setupBreakReminder(context);
@@ -84,13 +117,79 @@ function createStatusBarButton() {
 }
 
 function updateStatusBarButton() {
-    // Static button text and appearance
-    statusBarButton.text = "🐾 Pet";
-    statusBarButton.tooltip = "Click to run your pet across the screen!";
+    const config = vscode.workspace.getConfiguration('vscodePets');
+    const level = config.get<number>('level', 1);
+    const hunger = config.get<number>('hunger', 100);
+    const favoritePet = config.get<string>('favoritePet', '🐾');
+    const primaryEmoji = favoritePet && favoritePet !== '' ? favoritePet : '🐾';
+
+    let moodEmoji = '';
+    const idleTime = Date.now() - lastTypeTime;
+
+    if (hunger < 20) {
+        moodEmoji = ' 🤤'; // Hungry
+    } else if (idleTime > 10 * 60 * 1000) { // 10 minutes idle
+        moodEmoji = ' 💤'; // Sleeping
+    } else if (idleTime < 5000) { // Actively typing
+        moodEmoji = ' 💻'; // Working
+    }
+
+    statusBarButton.text = `${primaryEmoji} Lvl ${level}${moodEmoji}`;
+    statusBarButton.tooltip = `Level ${level} | Hunger: ${hunger}% | Click to run!`;
     statusBarButton.command = 'vscodePets.runPet';
-    statusBarButton.backgroundColor = isAnimationRunning
+    statusBarButton.backgroundColor = isAnimationRunning || hunger < 20
         ? new vscode.ThemeColor('statusBarItem.warningBackground')
         : undefined;
+}
+
+async function addXp(amount: number) {
+    const config = vscode.workspace.getConfiguration('vscodePets');
+    let xp = config.get<number>('xp', 0);
+    let level = config.get<number>('level', 1);
+
+    xp += amount;
+    const nextLevelXp = level * 100;
+
+    if (xp >= nextLevelXp) {
+        level += 1;
+        xp -= nextLevelXp;
+
+        const favoritePetName = config.get<string>('favoritePetName', 'Your pet');
+        vscode.window.showInformationMessage(`🎉 ${favoritePetName} leveled up to Level ${level}!`);
+    }
+
+    await config.update('xp', xp, vscode.ConfigurationTarget.Global);
+    await config.update('level', level, vscode.ConfigurationTarget.Global);
+    updateStatusBarButton();
+}
+
+async function feedPet() {
+    const config = vscode.workspace.getConfiguration('vscodePets');
+    let hunger = config.get<number>('hunger', 100);
+
+    if (hunger >= 100) {
+        vscode.window.showInformationMessage('Your pet is already full! 🛑');
+        return;
+    }
+
+    hunger = Math.min(100, hunger + 30);
+    await config.update('hunger', hunger, vscode.ConfigurationTarget.Global);
+
+    // Gain XP for taking care of pet
+    await addXp(15);
+
+    const favoritePetName = config.get<string>('favoritePetName', 'Your pet');
+    vscode.window.showInformationMessage(`🍔 You fed ${favoritePetName}! Hunger is now ${hunger}%.`);
+    updateStatusBarButton();
+}
+
+async function playWithPet(context: vscode.ExtensionContext) {
+    const config = vscode.workspace.getConfiguration('vscodePets');
+    // Gain XP for playing
+    await addXp(25);
+    const favoritePetName = config.get<string>('favoritePetName', 'Your pet');
+    vscode.window.showInformationMessage(`🎾 You played with ${favoritePetName}! It looks happy.`);
+    runPet(context);
 }
 
 async function runPet(context: vscode.ExtensionContext) {

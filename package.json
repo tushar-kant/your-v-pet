@@ -2,7 +2,7 @@
   "name": "your-vscode-pet",
   "displayName": " Your VSCode Pets",
   "description": "A delightful pet that runs across your VS Code! Set a favorite or enjoy random surprises.",
-  "version": "1.1.2",
+  "version": "1.1.3",
   "engines": {
     "vscode": "^1.74.0"
   },
@@ -63,6 +63,16 @@
         "title": "Import Custom Pets",
         "category": "VSCode Pets",
         "icon": "$(import)"
+      },
+      {
+        "command": "vscodePets.feedPet",
+        "title": "Feed Pet",
+        "category": "VSCode Pets"
+      },
+      {
+        "command": "vscodePets.playWithPet",
+        "title": "Play with Pet",
+        "category": "VSCode Pets"
       }
     ],
     "configuration": {
@@ -204,6 +214,24 @@
           "default": 0,
           "minimum": 0,
           "description": "Minutes between break reminders to run a pet (0 to disable)"
+        },
+        "vscodePets.xp": {
+          "type": "number",
+          "default": 0,
+          "description": "Hidden state: Total XP earned by coding and interacting.",
+          "scope": "global"
+        },
+        "vscodePets.level": {
+          "type": "number",
+          "default": 1,
+          "description": "Hidden state: Current pet level.",
+          "scope": "global"
+        },
+        "vscodePets.hunger": {
+          "type": "number",
+          "default": 100,
+          "description": "Hidden state: Hunger level, 0 to 100",
+          "scope": "global"
         }
       }
     }
